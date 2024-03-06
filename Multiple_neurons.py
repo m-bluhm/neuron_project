@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import datetime
 import random
 import pandas as pd
 from scipy.interpolate import make_interp_spline ##new import
@@ -28,7 +29,7 @@ I_mid = ((I_max - I_min)/2) + I_min
 period = 4000 #in ms = 4 seconds
 
 timeVector = np.arange(0, time, dt) #creating time vector of intervals of size dt
-neuron_num = 10 #10 neurons being simulated
+neuron_num = 1 #10 neurons being simulated
 neuron_arr = np.zeros((neuron_num, len(timeVector))).astype(int) #2D array
 neuron_volt = np.zeros((neuron_num, len(timeVector))) # Creates a placeholder for our voltages that is the same size as timeVector
 
@@ -38,11 +39,11 @@ stimVector = np.zeros(len(timeVector))
 
 #sine function. 1 cycle every 4 seconds. Oscilating current
 stimVector[0:] = ((I_max - I_min)/2) * (np.sin((timeVector/(period/(2*np.pi))))) + I_mid
-
 # Euler---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 voltageVector_neurons = np.zeros((neuron_num, len(timeVector))).astype(int) #vector containing the voltages for each neuron at each time bin
 voltageVector_neurons_avg = np.zeros(len(timeVector)) #vector containing the average voltage across neurons
+spike_time_matrix = []
 #WAYS TO IMPROVE:---------------------------------------------------------------------------------------------------------------------------------------------
 #run neurons in parallel (only when not talking to eachother)
 #compute external stimulus as you go. Don;t need to hold onto whole vector
@@ -54,9 +55,10 @@ for n in range(neuron_num): #for each neuron
     counter = 0
     voltageVector = np.zeros(len(timeVector)) #create a new voltage vector filled with all 0s
     voltageVector[0] = Vreset  # Set the initial voltage to be equal to the resting potential
-
     geVector = np.zeros(len(timeVector))  # amount spike jumps, excitatory conductance
     spikeVector = np.zeros(len(timeVector)).astype(int)  # holding 1s for spike and 0 for no spike at given interval
+    spike_time_vector = []
+    startTime = datetime.datetime.now()
 
     # This line initiates the loop. "S" counts the number of loops.
     # We are looping for 1 less than the length of the time vector
@@ -100,9 +102,7 @@ for n in range(neuron_num): #for each neuron
             # This 'if' statement checks if we are already at Vspike (this is
             # another way we can be above Vthresh)
             if voltageVector[S] == Vspike: #if the current voltage is a spike
-                # print(S) This prints the timing of spikes
                 spikeVector[S] = 1  # add a 1 to indicate a spike in spikeVector
-
                 # upadate conductance as if no spike
                 #geVector[i] = geVector[i-1] * np.exp(-dt/curTime) #MAX: WHAT IS THE PURPOSE OF THIS?
                 counter += 1
@@ -139,6 +139,7 @@ for i in range(len(voltageVector)):
     voltageVector_neurons_avg[i, ] = voltageVector_neurons[:, i].mean()
     # voltageVector_neurons_avg[i] = np.mean(voltageVector_neurons, axis = 1)
 
+print(spike_time_vector)
 plt.plot(timeVector[:5000], voltageVector_neurons_avg[:5000])
 #PLOT FULL THING ALONG WITH SINE WAVE
 plt.show()
@@ -154,7 +155,10 @@ for neuron in range(neuron_num):
         if spikeVector[y] == 1:
             spike_time_Vector[z] = timeVector[y]  # add spike times in this vector
             z = z + 1
+    print(spike_time_Vector)
 
+    #sum across rows of 1s and 0s. To see how many spikes. Maximum number of spikes is how wide matrix needs to be
+    #
     plt.plot(spike_time_Vector, np.zeros(len(spike_time_Vector)) + neuron, marker='|', linestyle='none')
     plt.xlabel("Time in ms")
     plt.ylabel("Neuron")
